@@ -31,14 +31,15 @@ $install_aliases = function() use ($homeDir, $zshFile, $pretty_print) {
     $aliasesFileName = $homeDir . '.aliases';
 
     if (file_exists($aliasesFileName)) {
-        $pretty_print('file .aliases is already installed, skipping', 'skip');
-    } else {
-        $myfile = fopen($aliasesFileName, "w");
-        fclose($myfile);
-        file_put_contents($aliasesFileName, file_get_contents(__DIR__ . '/aliases/.aliases'));
-        
-        $pretty_print(sprintf('.aliases installed to %s', $aliasesFileName));
-    } 
+        $pretty_print('file .aliases is already installed, removing', 'skip');
+        unlink($aliasesFileName);
+    }
+    
+    $myfile = fopen($aliasesFileName, "w");
+    fclose($myfile);
+    file_put_contents($aliasesFileName, file_get_contents(__DIR__ . '/aliases/.aliases'));
+    
+    $pretty_print(sprintf('.aliases installed to %s', $aliasesFileName));
 };
 
 $install_theme = function() use ($homeDir, $zshFile, $pretty_print) {
@@ -47,14 +48,15 @@ $install_theme = function() use ($homeDir, $zshFile, $pretty_print) {
     if (file_exists($ohMyZshThemesDir)) {
         $ohMyZshCustomThemeFile = $ohMyZshThemesDir . '/agnoster-custom.zsh-theme';
         if (file_exists($ohMyZshCustomThemeFile)) {
-            $pretty_print(sprintf('%s already installed, skipping', $ohMyZshCustomThemeFile), 'skip');
-        } else {
-            $myfile = fopen($ohMyZshCustomThemeFile, 'w');
-            fclose($myfile);
-            file_put_contents($ohMyZshCustomThemeFile, file_get_contents(__DIR__ . '/theme/agnoster-custom.zsh-theme'));
-    
-            $pretty_print(sprintf('%s has been created', $ohMyZshCustomThemeFile));
+            $pretty_print(sprintf('%s already installed, removing', $ohMyZshCustomThemeFile), 'skip');
+            unlink($ohMyZshCustomThemeFile);
         }
+
+        $myfile = fopen($ohMyZshCustomThemeFile, 'w');
+        fclose($myfile);
+        file_put_contents($ohMyZshCustomThemeFile, file_get_contents(__DIR__ . '/theme/agnoster-custom.zsh-theme'));
+
+        $pretty_print(sprintf('%s has been created', $ohMyZshCustomThemeFile));
     }
 
     $zshContent = file_get_contents($zshFile);
