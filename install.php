@@ -34,7 +34,7 @@ $install_aliases = function() use ($homeDir, $zshFile, $pretty_print) {
         $pretty_print('file .aliases is already installed, removing', 'skip');
         unlink($aliasesFileName);
     }
-    
+
     $myfile = fopen($aliasesFileName, "w");
     fclose($myfile);
     file_put_contents($aliasesFileName, file_get_contents(__DIR__ . '/aliases/.aliases'));
@@ -89,3 +89,5 @@ if (file_exists($zshFile)) {
 } else {
     $pretty_print('ZSH is not installed', 'fail');
 }
+
+shell_exec('source ~/.zshrc 2>&1');
