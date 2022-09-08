@@ -21,3 +21,101 @@ alias pull='git pull origin "${$(git symbolic-ref HEAD 2> /dev/null)##refs/heads
 alias commit='git commit -m'
 alias commit!='git commit --amend'
 alias status="git status"
+
+export LENDABLE_INFRASTRUCTURE_DIR=/home/sirdomin/projects/alphalend.infrastructure
+
+l:c () {
+  echo "docker-compose $@"
+  ( cd $LENDABLE_INFRASTRUCTURE_DIR && docker-compose $@ )
+}
+
+l:m () {
+  echo "make $@"
+  ( cd $LENDABLE_INFRASTRUCTURE_DIR && make $@ )
+}
+
+alias d='l:c'
+
+# lifecycle
+alias l:c:up='l:c up -d && l:wiremock:start'
+alias l:c:down='l:c down'
+alias l:c:stop='l:c stop'
+alias l:c:restart='l:c stop && l:c:up'
+alias l:c:platform-restart='l:c:stop platform-backend && l:c:up platform-backend && l:wiremock:start'
+
+# exec
+alias l:exec='l:c exec'
+alias l:x='l:exec platform-backend'
+alias l:bash='l:x bash'
+
+l:x:debug () {
+  INNER_CMD="XDEBUG_CONFIG='idekey=PHPSTORM' "$@
+  l:x sh -c "$INNER_CMD"
+}
+
+
+# composer
+alias l:cmp='l:x composer'
+
+alias l:cmp:fix-style='l:cmp fix-code-style'
+alias l:cmp:fix-style:last-commit='l:cmp:fix-style `git diff --name-only HEAD~`'
+alias l:cmp:fix-style:changes='l:cmp:fix-style `git diff --name-only`'
+alias l:cmp:fix-style:to-development='l:cmp:fix-style `git diff --name-only development --diff-filter=d`'
+
+alias l:cmp:static-analysis-raw='l:x vendor/bin/phpstan analyse --ansi --memory-limit=-1'
+alias l:cmp:static-analysis-raw:debug='l:x:debug vendor/bin/phpstan analyse --ansi --memory-limit=-1'
+alias l:cmp:static-analysis='l:cmp:static-analysis-raw features/ fixtures/ src/ tests/'
+alias l:cmp:static-analysis:last-commit='l:cmp:static-analysis-raw `git diff --name-only HEAD~`'
+alias l:cmp:static-analysis:changes='l:cmp:static-analysis-raw `git diff --name-only`'
+alias l:cmp:static-analysis:to-development='l:cmp:static-analysis-raw `git diff --name-only development --diff-filter=d | grep -iE "\.php$"`'
+alias l:cache='l:x bin/console cache:warmup --env=test'
+# tests
+alias l:t='l:x vendor/bin/phpunit'
+alias l:t:debug='l:x:debug vendor/bin/phpunit'
+alias l:t:d='l:t:debug'
+alias l:t:last-commit='l:t `git diff --name-only HEAD~ | grep -iE "Test\.php$"`'
+alias l:t:changes='l:t `git diff --name-only | grep -iE "Test\.php$"`'
+alias l:t:to-development='l:t `git diff --name-only development --diff-filter=d | grep -iE "Test\.php$"`'
+alias l:t:to-tree-factoring='l:t `git diff --name-only treefactoring-2021-2022 --diff-filter=d | grep -iE "Test\.php$"`'
+
+alias l:behat='l:x vendor/bin/behat --tags "~@ignore" --strict --no-snippets'
+alias l:behat:debug='l:x:debug vendor/bin/behat --tags "~@ignore" --strict --no-snippets'
+alias l:b='l:behat'
+alias l:b:d='l:behat:debug'
+
+# logs
+alias l:logs:follow-all='l:x tail -f /tmpfs/platform/var/logs/*.log'
+alias l:logs:follow-dev='l:x tail -f /tmpfs/platform/var/logs/dev.log'
+alias l:logs:follow-dev-error='l:logs:follow-dev | grep -iE "\.(warning|error|critical|alert|emergency)"'
+alias l:logs:follow-dev-query='l:logs:follow-dev | grep -iE "doctrine\.DEBUG"'
+alias l:logs:follow-test='l:x tail -f /tmpfs/platform/var/logs/test.log'
+alias l:logs:follow-test-error='l:logs:follow-test | grep -iE "\.(warning|error|critical|alert|emergency)"'
+alias l:logs:follow-test-query='l:logs:follow-test | grep -iE "doctrine\.DEBUG"'
+
+# console
+alias l:console='l:x bin/console'
+alias l:console:debug='l:x:debug bin/console'
+
+# migrations
+alias l:migrate='l:console doctrine:migrations:migrate'
+alias l:diff='l:console doctrine:migrations:di'
+
+# cache
+alias l:cache:clear='l:console cache:clear'
+alias l:cache:clear:test='l:console cache:clear --env=test'
+alias l:cache:clear:test:debug='l:cache:clear:test'
+alias l:cache:clear:test:no-debug='l:cache:clear:test --no-debug'
+alias l:cache:clear:test:full='l:cache:clear:test:no-debug && l:cache:clear:test:debug'
+
+# wiremock
+alias l:wiremock:start='l:c exec -dT platform-backend bin/wiremock'
+alias l:wiremock:stop='l:x bin/wiremock-stop'
+alias l:wiremock:restart='l:wiremock:stop && l:wiremock:start'
+
+# utils
+
+alias l:pre-mr='l:cmp:fix-style:to-development && l:cmp:static-analysis:to-development && l:t:to-development'
+alias l:post-update='l:cmp install && l:cmp symfony && l:migrate'
+alias l:post-update:no-interaction='l:cmp install --no-interaction && l:cmp symfony --no-interaction && l:migrate --no-interaction'
+alias l:post-update:full='l:post-update:no-interaction && l:wiremock:restart && l:cache:clear:test:full'
+alias l:fix-ssh-agent-permissions='l:m fix-ssh-agent-permissions'
